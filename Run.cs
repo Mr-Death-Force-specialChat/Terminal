@@ -126,22 +126,25 @@ namespace Terminal
             }
             WriteToLog("--------------------------------------------------session ended--------------------------------------------------");
         }
+        // reads the command
         string readCommand()
         {
             string data = Console.ReadLine();
             return data;
         }
+        // hides the terminal window (unused)
         void HIDE()
         {
             var handle = GetConsoleWindow();
             ShowWindow(handle, SW_HIDE);
         }
+        // shows the terminal window (unused)
         void SHOW()
         {
             var handle = GetConsoleWindow();
             ShowWindow(handle, SW_SHOW);
         }
-#region parsers
+        #region parsers ||||        parsers used by the terminal (its stupid and not good)
         /*
          * parse prompt
          * $P path
@@ -159,6 +162,7 @@ namespace Terminal
          */
         string parsePrompt()
         {
+            // parses the prompt [help prompt] for more info
             string data = "";
 
             for (int i = 0; i < prompt.Length; i++)
@@ -239,6 +243,7 @@ namespace Terminal
          */
         void parseCommand()
         {
+            // get arguments and stuff
             string[] commandArray;
             commandArray = Regex.Split(command, @" |,");
             string cmd = commandArray[0];
@@ -251,19 +256,19 @@ namespace Terminal
                 argstr += commandArray[i + 1] + ((commandArray.Length - 2) != i ? " " : "");
             }
             argsa = argstr.Split(' ');
+            // parsin is fun (i need help)
+            // normal functional command system
             if (!failingCmdSystem)
             {
                 try
                 {
+                    // READ HELP
+                    // if the config file doesn't exist ERROR
                     if (!File.Exists(Path.Combine(path, "Config.ini")))
                     {
                         failingCmdSystem = true;
                         Console.WriteLine("Failing command system.");
                         double id = GenSessionID();
-                        while (id == sessionID)
-                        {
-                            id = GenSessionID();
-                        }
                         Run rn = new Run();
                         rn.failingCmdSystem = true;
                         rn.StartTerminal(true);
@@ -795,7 +800,7 @@ namespace Terminal
                         }
                         if (data == "")
                         {
-                            Console.WriteLine("commands:\ncls|clear\nexit\ntitle\nreadln\nterminal\nread\nreadreg\nwritereg\nrun\nstart\ncd\nls|dir\ncreate\ndelete\nmkdir|md\nrmdir|rd\ncopy|cp\nprmpt|prompt\nhelp");
+                            Console.WriteLine("commands:\ncls|clear\nexit\ntitle\nreadln\nterminal\nread\nreadreg\nwritereg\nrun\nstart\ncd\nls|dir\ncreate\ndelete\nmkdir|md\nrmdir|rd\ncopy|cp\nprmpt|prompt\nhelp\nerror\nwarn\nsuccess\nFSCon\nLock\nUnlock\nToggleDebug\nVirtualTerminal\nRun help [command] for more info");
                         }
                         else
                         {
@@ -991,7 +996,7 @@ namespace Terminal
 
                         }
                         Console.WriteLine("Virtual terminal session ended <{0}>", id);
-                        DebugLog(true, "VTMGR", "Virtual terminal session ended. session id <{0}>\n", id.ToString());
+                        DebugLog(true, "VMGR", "Virtual terminal session ended. session id <{0}>\n", id.ToString());
 
                     }
                     else if (cmd == "")
@@ -1024,6 +1029,7 @@ namespace Terminal
                     Error("Something went wrong: " + e.Message);
                 }
             }
+            // broken command system (missing config.ini)
             else if (failingCmdSystem)
             {
                 if (cmd == "exit")
@@ -1430,10 +1436,12 @@ namespace Terminal
                 Warning("'" + cmd + "' is not a valid internal or external command");
             }
         }
-#endregion
-#region functions
+        #endregion
+        #region functions ||||          functions used by the terminal (its stupid and not good)
+        // help message when running (help [X]) x is a command
         void help(string data)
         {
+            data = data.ToLower();
             if (data == "echo")
             {
                 Console.WriteLine("write arguments to the console\nexample: echo Hello, World!");
@@ -1522,11 +1530,48 @@ namespace Terminal
                 Console.WriteLine("$Q =");
                 Console.WriteLine("$$ $");
             }
+            else if (data == "error")
+            {
+                Console.WriteLine("Shows a fake error message");
+            }
+            else if (data == "warn")
+            {
+                Console.WriteLine("Shows a fake warning message");
+            }
+            else if (data == "success")
+            {
+                Console.WriteLine("Shows a fake (real?) success message");
+            }
+            else if (data == "fscon")
+            {
+                Console.WriteLine("a file system altering program (command)\narg file (requires a word after it): specifies a file\narg in: read the file\narg out: write the file (one word currenlt supported)\narg overwrite:(true/false): does it overwrite or in other words append?\narg create:(true/false): not supported yet also useless");
+            }
+            else if (data == "lock")
+            {
+                Console.WriteLine("LOCKS the terminal startup with a password can be bypassed but the password can't be read");
+            }
+            else if (data == "unlock")
+            {
+                Console.WriteLine("removes the lock otherwise usless");
+            }
+            else if (data == "toggledebug")
+            {
+                Console.WriteLine("if it is not debug it makes it debug and vise versa (i think thats how to use it)");
+            }
+            else if (data == "virtualterminal")
+            {
+                Console.WriteLine("creates a new terminal");
+            }
+            else if (data == "emptyprogramssuck")
+            {
+                Console.WriteLine("agree");
+            }
             else
             {
                 Console.WriteLine("Command doesn't exist");
             }
         }
+        // if something went wrong
         public void Warning(string message)
         {
             ConsoleColor clr = Console.ForegroundColor;
@@ -1536,6 +1581,7 @@ namespace Terminal
             Console.ForegroundColor = clr;
             WriteToLog("[LOG module] WARNING: " + message);
         }
+        // if something almost went right
         public void Error(string message)
         {
             ConsoleColor clr = Console.ForegroundColor;
@@ -1545,6 +1591,7 @@ namespace Terminal
             Console.ForegroundColor = clr;
             WriteToLog("[LOG module] ERROR: " + message);
         }
+        // if something went right
         public void Success(string message)
         {
             ConsoleColor clr = Console.ForegroundColor;
@@ -1554,6 +1601,7 @@ namespace Terminal
             Console.ForegroundColor = clr;
             WriteToLog("[LOG module] SUCCESS: " + message);
         }
+        // logs a debug message
         public void DebugLog(bool returnChar, string module, string msg, string ca = "{0}", string cb = "{1}", string cc = "{2}", string cd = "{3}", string ce = "{4}", string cf = "{5}", string cg = "{6}", string ch = "{7}", string ci = "{8}", string cj = "{9}", string ck = "{10}")
         {
             msg = msg.Replace("{0}", ca);
@@ -1586,6 +1634,7 @@ namespace Terminal
                 WriteToLog(write);
             }
         }
+        // Forces the log of a debug log
         public void ForceDebugLog(bool returnChar, string module, string msg, string ca = "{0}", string cb = "{1}", string cc = "{2}", string cd = "{3}", string ce = "{4}", string cf = "{5}", string cg = "{6}", string ch = "{7}", string ci = "{8}", string cj = "{9}", string ck = "{10}")
         {
             msg = msg.Replace("{0}", ca);
@@ -1615,6 +1664,7 @@ namespace Terminal
             }
             WriteToLog(write);
         }
+        // computes a hash and outputs the result
         public void ComputeSha512Hash(string Input, out string res)
         {
             res = "";
@@ -1633,6 +1683,7 @@ namespace Terminal
             }
             DebugLog(true, "SECURITYSYS", "Computed hash: {0}\n", res);
         }
+        // -m-a-k-e-s- compute a hash and returns the result
         public string ComputeSha512Hash(string Input)
         {
             string res = "";
@@ -1652,6 +1703,7 @@ namespace Terminal
             DebugLog(true, "SECURITYSYS", "Computed hash: {0}\n", res);
             return res;
         }
+        // writes to the log file
         public void WriteToLog(string write)
         {
             try
@@ -1667,6 +1719,7 @@ namespace Terminal
                 Console.WriteLine("Failing log system: {0}", e.Message);
             }
         }
+        // A function to generate a session id (sid). used when creating terminal sessions [help virtualterminal] for more info about virtual terminals
         public double GenSessionID()
         {
             double superTempNobodyUses = new Random().NextDouble();
@@ -1678,19 +1731,26 @@ namespace Terminal
             Program.sessions.Add(superTempNobodyUses);
             return superTempNobodyUses;
         }
+        // A function that returns the index of a session id (sid). used when using DelSessionID(int idx)
         public int GetSessionIDIndex(double sid)
         {
             int sidx = Program.sessions.IndexOf(sid);
             return sidx;
         }
+        // A function to delete a session id from sessions list using an idx. used when exiting a terminal session
         public void DelSessionID(int idx)
         {
+            string sid = Program.sessions[idx].ToString(); ;
             Program.sessions.RemoveAt(idx);
+            DebugLog(true, "CORE", "Session id {0} at {1} removed", sid, idx.ToString());
         }
+        // A function to delete a session id from sessions list. used when exiting a terminal session
         public void DelSessionID(double sid)
         {
             Program.sessions.Remove(sid);
+            DebugLog(true, "CORE", "Session id {0} removed", sid.ToString());
         }
+        // Unused function
         public double ClampVal(double min, double max, double val)
         {
             if (val < min)
@@ -1699,6 +1759,7 @@ namespace Terminal
                 val = max;
             return val;
         }
+        // Unused function
         public long ClampVal(long min, long max, long val)
         {
             if (val < min)
@@ -1707,6 +1768,7 @@ namespace Terminal
                 val = max;
             return val;
         }
+        // Unused function
         public int ClampVal(int min, int max, int val)
         {
             if (val < min)
@@ -1718,3 +1780,4 @@ namespace Terminal
         #endregion;
     }
 }
+// 1783 lines (1782 without this line)
