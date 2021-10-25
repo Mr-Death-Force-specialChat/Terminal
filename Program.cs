@@ -77,10 +77,14 @@ namespace Terminal
                 Config.IniWriteValue("Commands", "Unlock", "ULCK");
                 Config.IniWriteValue("Commands", "ToggleDebug", "SDBG");
                 Config.IniWriteValue("Commands", "VirtualTerminal", "VTERM");
+                Config.IniWriteValue("Commands", "DisableLC", "DLC");
+                Config.IniWriteValue("Commands", "check", "CHKR");
                 Config.IniWriteValue("Commands", "FSCon", "FSC");
+                Config.IniWriteValue("Commands", "cdd", "CDD");
                 Config.IniWriteValue("keConfig", "Debug", "keFalse");
                 Config.IniWriteValue("keConfig", "SPath", "keFalse");
                 Config.IniWriteValue("keConfig", "SPathV", "File shouldn't exit with SPath=keFalse");
+                Config.IniWriteValue("keConfig", "DLog", "keFalse");
                 run.Success("Rewritten the config file");
             }
             catch (Exception e)

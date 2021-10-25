@@ -12,6 +12,15 @@ namespace Terminal
 {
     public class Run
     {
+        /*
+         * CHANGE LOG
+         *  - 2.0.32.6
+         *      minor bug fix - 2.0.32.6
+         *      allowed multi word files to be made using FSCon - 2.0.32.6
+         *      added FSCon to broken cmd system - 2.0.32.6
+         *      added DISABLE LOG function
+         *      alias feature
+         */
         // dllimports
         [DllImport("kernel32.dll")]
         static extern IntPtr GetConsoleWindow();
@@ -34,12 +43,13 @@ namespace Terminal
         bool ext = false;
         bool dbg = false;
         bool lck = false;
+        bool dlc = false;
         public static string title = "EXO-Terminal";
         public static string path = Program.GetPath();
         public bool failingCmdSystem = false;
         INIFile Config = new INIFile(Path.Combine(path, "Config.ini"));
         string tmpPath = Path.Combine(path, "tmp");
-        string LV = "2.0.32.5";
+        string LV = "2.0.32.6";
         public void StartTerminal(bool debug)
         {
             WriteToLog("--------------------------------------------------new session started--------------------------------------------------");
@@ -251,6 +261,8 @@ namespace Terminal
             string CmdReg = Config.IniReadValue("CommandRegistry", cmd);
             string argstr = "";
             string[] argsa = new string[commandArray.Length - 1];
+            if (BuiltCmdReg == "")
+                BuiltCmdReg = cmd; // user may use the config command
             for (int i = 0; i < commandArray.Length - 1; i++)
             {
                 argstr += commandArray[i + 1] + ((commandArray.Length - 2) != i ? " " : "");
@@ -366,6 +378,28 @@ namespace Terminal
                                     DebugLog(false, "terminal.test-read-write-access", e.Message + "\n");
                                 }
                             }
+                            else if (commandArray[i + 1] == "-ac" || commandArray[i + 1] == "--aliascreate")
+                            {
+                                if (!(commandArray.Length >= i + 3))
+                                {
+                                    Error("alias creation needs more arguments. eg <alias name> <alias command(in config.ini)>");
+                                    return;
+                                }
+                                string an = commandArray[i + 2];
+                                string ac = commandArray[i + 3];
+                                if (Config.IniReadValue("Commands", an) == ac)
+                                {
+                                    Warning("Alias already exists");
+                                    return;
+                                }
+                                else if ((Config.IniReadValue("Commands", an) != ac) && (Config.IniReadValue("Commands", an) != ""))
+                                {
+                                    Warning("Changing an existing alias");
+                                }
+                                Config.IniWriteValue("Commands", an, ac);
+                                Success("Changed");
+                                return;
+                            }
                             else if (commandArray[i + 1] == "-h" || commandArray[i + 1] == "--help")
                             {
                                 Console.WriteLine("Syntax Syntax: <...> required, {...} optional");
@@ -375,6 +409,7 @@ namespace Terminal
                                 Warning("this will delete all aliases and external comands and the currently set password");
                                 Console.WriteLine("-rs or --restart: restarts the terminal");
                                 Console.WriteLine("-trwa or --test-read-write-access: read and write to test if it is possible");
+                                Console.WriteLine("-ac or --aliascreate: add a new alias syn:<alias name> <alias command(in config.ini)>");
                                 Console.WriteLine("-h or --help: help msg");
                             }
                             else
@@ -588,6 +623,9 @@ namespace Terminal
                         {
                             Warning("Directory not found");
                         }
+                        // automaticaly fix broken currentPath
+                        Directory.SetCurrentDirectory(currentPath);
+                        currentPath = Directory.GetCurrentDirectory();
                     }
                     else if (BuiltCmdReg == "ls")
                     {
@@ -800,7 +838,7 @@ namespace Terminal
                         }
                         if (data == "")
                         {
-                            Console.WriteLine("commands:\ncls|clear\nexit\ntitle\nreadln\nterminal\nread\nreadreg\nwritereg\nrun\nstart\ncd\nls|dir\ncreate\ndelete\nmkdir|md\nrmdir|rd\ncopy|cp\nprmpt|prompt\nhelp\nerror\nwarn\nsuccess\nFSCon\nLock\nUnlock\nToggleDebug\nVirtualTerminal\nRun help [command] for more info");
+                            Console.WriteLine("commands:\ncls|clear\nexit\ntitle\nreadln\nterminal\nread\nreadreg\nwritereg\nrun\nstart\ncd\nls|dir\ncreate\ndelete\nmkdir|md\nrmdir|rd\ncopy|cp\nprmpt|prompt\nhelp\nerror\nwarn\nsuccess\nFSCon\nLock\nUnlock\nToggleDebug\nVirtualTerminal\nRun help [command] for more info\ndisablelc run disablelc");
                         }
                         else
                         {
@@ -819,13 +857,15 @@ namespace Terminal
                     {
                         Success("Success");
                     }
-                    else if (BuiltCmdReg == "FSC")
+                    else if (BuiltCmdReg == "fscon")
                     {
                         string fn = "";
                         string word = "";
                         bool mode = false;
                         bool ov = true;
                         bool createNew = false;
+                        bool es = false;
+                        bool el = false;
                         Directory.SetCurrentDirectory(currentPath);
                         try
                         {
@@ -863,6 +903,14 @@ namespace Terminal
                                 {
                                     createNew = false;
                                 }
+                                if (argsa[i] == "es:true")
+                                {
+                                    es = true;
+                                }
+                                if (argsa[i] == "el:true")
+                                {
+                                    el = true;
+                                }
                             }
                             if (createNew)
                             {
@@ -878,6 +926,10 @@ namespace Terminal
                             else
                             {
                                 StreamWriter sw = new StreamWriter(fn, !ov);
+                                if (el)
+                                    sw.Write("\n");
+                                if (es)
+                                    sw.Write(" ");
                                 sw.Write(word);
                                 sw.Flush();
                                 sw.Close();
@@ -999,6 +1051,74 @@ namespace Terminal
                         DebugLog(true, "VMGR", "Virtual terminal session ended. session id <{0}>\n", id.ToString());
 
                     }
+                    else if (BuiltCmdReg == "DLC")
+                    {
+                        dlc = !dlc;
+                        Config.IniWriteValue("keConfig", "DLog", dlc ? "keTrue" : "keFlase");
+                        Console.WriteLine("Log: {0}", dlc);
+                    }
+                    else if (BuiltCmdReg == "CHKR")
+                    {
+                        string op = "";
+                        if (argsa.Length >= 1)
+                        {
+                            op = argsa[0];
+                            if (op == "safe")
+                            {
+                                bool fail = false;
+                                try
+                                {
+                                    Config.IniWriteValue("keConfig", "DLC", Config.IniReadValue("keConfig", "DLC"));
+                                }
+                                catch (Exception)
+                                {
+                                    Error("Config failing", true);
+                                    failingCmdSystem = true;
+                                    fail = true;
+                                }
+                                try
+                                {
+                                    WriteToLog("check log", true);
+                                }
+                                catch (Exception)
+                                {
+                                    Error("Log failing", true);
+                                    fail = true;
+                                }
+                                try
+                                {
+                                    if (!Directory.Exists(tmpPath))
+                                    {
+                                        throw new DirectoryNotFoundException("temp not found");
+                                    }
+                                }
+                                catch (Exception)
+                                {
+                                    Warning("Temp dir not found please run: terminal -trwa", true);
+                                    fail = true;
+                                }
+                                if (!fail)
+                                {
+                                    Success("Safe check");
+                                }
+                            }
+                        }
+                        else
+                        {
+                            Error("Arguments not found");
+                        }
+                    }
+                    else if (BuiltCmdReg == "CDD")
+                    {
+                        string p = "";
+                        foreach (string arg in argsa)
+                        {
+                            p += arg + " ";
+                        }
+                        currentPath = p;
+                        Directory.SetCurrentDirectory(currentPath);
+                        currentPath = Directory.GetCurrentDirectory();
+                    }
                     else if (cmd == "")
                     {
 
@@ -1029,7 +1149,7 @@ namespace Terminal
                     Error("Something went wrong: " + e.Message);
                 }
             }
-            // broken command system (missing config.ini)
+            // broken command system (missing config.ini) can be caused by an incorrect config.ini file (don't remeber how that happened)
             else if (failingCmdSystem)
             {
                 if (cmd == "exit")
@@ -1428,6 +1548,90 @@ namespace Terminal
                         Error("Unknown arguments");
                     }
                 }
+                else if (BuiltCmdReg == "fscon")
+                {
+                    string fn = "";
+                    string word = "";
+                    bool mode = false;
+                    bool ov = true;
+                    bool createNew = false;
+                    bool es = false;
+                    bool el = false;
+                    Directory.SetCurrentDirectory(currentPath);
+                    try
+                    {
+                        for (int i = 0; i < argsa.Length; i++)
+                        {
+                            if (argsa[i] == "file")
+                            {
+                                fn = argsa[i + 1];
+                            }
+                            if (argsa[i] == "in")
+                            {
+                                mode = false;
+                            }
+                            if (argsa[i] == "out")
+                            {
+                                mode = true;
+                            }
+                            if (argsa[i] == "word")
+                            {
+                                word = argsa[i + 1];
+                            }
+                            if (argsa[i] == "overwrite:true")
+                            {
+                                ov = true;
+                            }
+                            if (argsa[i] == "overwrite:false")
+                            {
+                                ov = false;
+                            }
+                            if (argsa[i] == "create:true")
+                            {
+                                createNew = true;
+                            }
+                            if (argsa[i] == "create:false")
+                            {
+                                createNew = false;
+                            }
+                            if (argsa[i] == "es:true")
+                            {
+                                es = true;
+                            }
+                            if (argsa[i] == "el:true")
+                            {
+                                el = true;
+                            }
+                        }
+                        if (createNew)
+                        {
+                            File.Create(fn);
+                        }
+                        if (mode)
+                        {
+                            StreamReader sr = new StreamReader(fn);
+                            Console.WriteLine(sr.ReadToEnd());
+                            sr.Close();
+                            sr.Dispose();
+                        }
+                        else
+                        {
+                            StreamWriter sw = new StreamWriter(fn, !ov);
+                            if (el)
+                                sw.Write("\n");
+                            if (es)
+                                sw.Write(" ");
+                            sw.Write(word);
+                            sw.Flush();
+                            sw.Close();
+                            sw.Dispose();
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Error("Something went wrong [" + e.Message + "]");
+                    }
+                }
                 else
                     Console.WriteLine("Failing command system.");
             }
@@ -1437,7 +1641,7 @@ namespace Terminal
             }
         }
         #endregion
-        #region functions ||||          functions used by the terminal (its stupid and not good)
+        #region functions |||| functions used by the terminal (its stupid and not good)
         // help message when running (help [X]) x is a command
         void help(string data)
         {
@@ -1544,7 +1748,7 @@ namespace Terminal
             }
             else if (data == "fscon")
             {
-                Console.WriteLine("a file system altering program (command)\narg file (requires a word after it): specifies a file\narg in: read the file\narg out: write the file (one word currenlt supported)\narg overwrite:(true/false): does it overwrite or in other words append?\narg create:(true/false): not supported yet also useless");
+                Console.WriteLine("a file system altering program (command)\narg file (requires a word after it): specifies a file\narg in: read the file\narg out: write the file (one word currenlt supported)\narg overwrite:(true/false): does it overwrite or in other words append?\narg create:(true/false): not supported yet also useless\narg es:true: adds a space before writing (allows multi words in files)\narg el:true: adds an extra line before writing");
             }
             else if (data == "lock")
             {
@@ -1566,40 +1770,47 @@ namespace Terminal
             {
                 Console.WriteLine("agree");
             }
+            else if (data == "disablelc")
+            {
+                Console.WriteLine("toggles logging");
+            }
             else
             {
                 Console.WriteLine("Command doesn't exist");
             }
         }
         // if something went wrong
-        public void Warning(string message)
+        public void Warning(string message, bool dl = false)
         {
             ConsoleColor clr = Console.ForegroundColor;
             Console.ForegroundColor = ConsoleColor.DarkYellow;
             Console.Write("WARNING: ");
             Console.WriteLine(message);
             Console.ForegroundColor = clr;
-            WriteToLog("[LOG module] WARNING: " + message);
+            if (!dl)
+                WriteToLog("[LOG module] WARNING: " + message);
         }
         // if something almost went right
-        public void Error(string message)
+        public void Error(string message, bool dl = false)
         {
             ConsoleColor clr = Console.ForegroundColor;
             Console.ForegroundColor = ConsoleColor.DarkRed;
             Console.Write("ERROR: ");
             Console.WriteLine(message);
             Console.ForegroundColor = clr;
-            WriteToLog("[LOG module] ERROR: " + message);
+            if (!dl)
+                WriteToLog("[LOG module] ERROR: " + message);
         }
         // if something went right
-        public void Success(string message)
+        public void Success(string message, bool dl = false)
         {
             ConsoleColor clr = Console.ForegroundColor;
             Console.ForegroundColor = ConsoleColor.DarkGreen;
             Console.Write("SUCCESS: ");
             Console.WriteLine(message);
             Console.ForegroundColor = clr;
-            WriteToLog("[LOG module] SUCCESS: " + message);
+            if (!dl)
+                WriteToLog("[LOG module] SUCCESS: " + message);
         }
         // logs a debug message
         public void DebugLog(bool returnChar, string module, string msg, string ca = "{0}", string cb = "{1}", string cc = "{2}", string cd = "{3}", string ce = "{4}", string cf = "{5}", string cg = "{6}", string ch = "{7}", string ci = "{8}", string cj = "{9}", string ck = "{10}")
@@ -1704,8 +1915,10 @@ namespace Terminal
             return res;
         }
         // writes to the log file
-        public void WriteToLog(string write)
+        public void WriteToLog(string write, bool throwE = false)
         {
+            if (dlc)
+                return;
             try
             {
                 StreamWriter sw = new StreamWriter(Path.Combine(path, "Log.log"), true);
@@ -1716,7 +1929,10 @@ namespace Terminal
             }
             catch (Exception e)
             {
-                Console.WriteLine("Failing log system: {0}", e.Message);
+                if (!throwE)
+                    Console.WriteLine("Failing log system: {0}", e.Message);
+                else
+                    throw e;
             }
         }
         // A function to generate a session id (sid). used when creating terminal sessions [help virtualterminal] for more info about virtual terminals
@@ -1780,4 +1996,3 @@ namespace Terminal
         #endregion;
     }
 }
-// 1783 lines (1782 without this line)
