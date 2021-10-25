@@ -20,6 +20,13 @@ namespace Terminal
          *      added FSCon to broken cmd system - 2.0.32.6
          *      added DISABLE LOG function
          *      alias feature
+         *  - 2.0.33.0
+         *      fixed fscon
+         *          fix details: in "fscon", out "WARNING: 'fscon' is not a valid internal or external"
+         *      fixed max password attempts being int.MaxValue
+         *      added delay before exiting the terminal when entered an invalid password with 0 attempts left
+         *      
+         *      added color
          */
         // dllimports
         [DllImport("kernel32.dll")]
@@ -49,7 +56,7 @@ namespace Terminal
         public bool failingCmdSystem = false;
         INIFile Config = new INIFile(Path.Combine(path, "Config.ini"));
         string tmpPath = Path.Combine(path, "tmp");
-        string LV = "2.0.32.6";
+        string LV = "2.0.33.0";
         public void StartTerminal(bool debug)
         {
             WriteToLog("--------------------------------------------------new session started--------------------------------------------------");
@@ -76,7 +83,7 @@ namespace Terminal
                 Console.Write("LOCKED");
                 Console.ForegroundColor = clr;
                 Console.WriteLine("]");
-                int attemptsLeft = int.MaxValue;
+                int attemptsLeft = 10;
                 attemptsLeft++;
                 while (true)
                 {
@@ -96,6 +103,7 @@ namespace Terminal
                         if (attemptsLeft <= 0)
                         {
                             ext = true;
+                            Thread.Sleep(10000);
                             break;
                         }
                     }
@@ -838,7 +846,7 @@ namespace Terminal
                         }
                         if (data == "")
                         {
-                            Console.WriteLine("commands:\ncls|clear\nexit\ntitle\nreadln\nterminal\nread\nreadreg\nwritereg\nrun\nstart\ncd\nls|dir\ncreate\ndelete\nmkdir|md\nrmdir|rd\ncopy|cp\nprmpt|prompt\nhelp\nerror\nwarn\nsuccess\nFSCon\nLock\nUnlock\nToggleDebug\nVirtualTerminal\nRun help [command] for more info\ndisablelc run disablelc");
+                            Console.WriteLine("commands:\ncls|clear\nexit\ntitle\nreadln\nterminal\nread\nreadreg\nwritereg\nrun\nstart\ncd\nls|dir\ncreate\ndelete\nmkdir|md\nrmdir|rd\ncopy|cp\nprmpt|prompt\nhelp\nerror\nwarn\nsuccess\nFSCon\nLock\nUnlock\nToggleDebug\nVirtualTerminal\ndisablelc\ncolor\nRun help [command] for more info");
                         }
                         else
                         {
@@ -1118,6 +1126,25 @@ namespace Terminal
                         currentPath = p;
                         Directory.SetCurrentDirectory(currentPath);
                         currentPath = Directory.GetCurrentDirectory();
+                    }
+                    else if (BuiltCmdReg == "CLR")
+                    {
+                        if (argsa.Length == 2)
+                        {
+                            int bg = int.Parse(argsa[0]);
+                            int fg = int.Parse(argsa[1]);
+                            Console.BackgroundColor = (ConsoleColor)bg;
+                            Console.ForegroundColor = (ConsoleColor)fg;
+                        }
+                        else if (argsa.Length <= 1 && (argsa[0] == ""))
+                        {
+                            Console.BackgroundColor = ConsoleColor.Black;
+                            Console.ForegroundColor = ConsoleColor.White;
+                        }
+                        else
+                        {
+                            Error("Where are my 2 arguments? you can give me nothing. gonna eat the config and remove all the alia-*gets shot*");
+                        }
                     }
                     else if (cmd == "")
                     {

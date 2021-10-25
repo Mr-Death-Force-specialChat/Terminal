@@ -81,6 +81,7 @@ namespace Terminal
                 Config.IniWriteValue("Commands", "check", "CHKR");
                 Config.IniWriteValue("Commands", "FSCon", "FSC");
                 Config.IniWriteValue("Commands", "cdd", "CDD");
+                Config.IniWriteValue("Commands", "color", "CLR");
                 Config.IniWriteValue("keConfig", "Debug", "keFalse");
                 Config.IniWriteValue("keConfig", "SPath", "keFalse");
                 Config.IniWriteValue("keConfig", "SPathV", "File shouldn't exit with SPath=keFalse");
