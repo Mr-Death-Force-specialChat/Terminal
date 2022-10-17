@@ -13,6 +13,14 @@ namespace Terminal
     public class Run
     {
         /*
+         * TODO
+         * -  2.0.32.7 QOL
+         *      custom password attempts
+         * -  3.0.0.0 QualUI
+         *      gui mode
+         */
+
+        /*
          * CHANGE LOG
          *  - 2.0.32.6
          *      minor bug fix - 2.0.32.6
