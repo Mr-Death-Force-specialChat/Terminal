@@ -140,12 +140,8 @@ namespace Terminal
                 Console.ForegroundColor = clr;
                 Console.WriteLine("]");
             }
-            while (true)
+            while (ext)
             {
-                if (ext)
-                {
-                    break;
-                }
                 Console.Write(parsePrompt());
                 command = readCommand();
                 parseCommand();
